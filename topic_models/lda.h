@@ -18,7 +18,7 @@
 template<bool lda_debug = false>
 void lda(int topics, int iterations,
     double alpha, double beta, int word_count,
-    std::map<int, std::vector<int>> docs,
+    const std::map<int, std::vector<int>>& docs,
     std::map<int, std::vector<int>>& nmk,
     std::vector<std::vector<int>>& nkt
 )
