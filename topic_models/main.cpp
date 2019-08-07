@@ -10,42 +10,67 @@
 #include <time.h>
 #include <tuple>
 
-#include "lda.h"
+#include "btm.h"
 
 using namespace std;
 
 int main()
 {
-    map<int, vector<int>> docs = {
-        { 1,{ 0, 0, 1, 2, 2, 3, 3, 4, 5 } },
-    { 2,{ 1, 5, 6, 7, 8, 9, 10, 11, 12 } },
-    { 3,{ 8, 13, 14, 15, 16, 17, 18, 19, 20, 21 } },
-    { 4,{ 1, 5, 8, 19, 22, 23, 24, 25, 26, 27, 28, 29 } },
-    { 5,{ 0, 3, 16, 16, 30, 31 } }
-    };
-    int word_cnt = 36;
-    int topics = 2;
-    std::map<int, std::vector<int>> nmk;
-    std::vector<std::vector<int>> nkt;
-    lda<>(topics, 20, 1.0 / topics, 0.01, word_cnt, docs, nmk, nkt);
-    ofstream terms;
-    terms.open("terms.csv");
-    for (int i = 0; i != nkt.size(); i++) {
-        terms << i;
-        for (int j = 0; j != nkt[i].size(); j++) {
-            terms << "," << nkt[i][j];
+    const int term_cnt = 698938;
+    
+    ifstream in_docs;
+    
+    // load journal subd
+    in_docs.open("E:\\Projects\\Python\\findexperts\\search\\lda\\btm_doc.csv");
+    std::map<int, std::vector<int>> docs;
+    
+    // load publications
+    int docid;
+    int wid;  // word id
+
+    while (!in_docs.eof()) {
+        in_docs >> docid;
+    
+        auto v = vector<int>();
+        while (in_docs.get() != '\n' && !in_docs.eof()) {
+            in_docs >> wid;
+            v.push_back(wid);
         }
-        terms << endl;
+        docs[docid] = v;
+    }
+    in_docs.close();
+    cout << "docs loaded" << endl;
+
+    int topics = 10;
+    std::vector<int> nz;
+    std::vector<std::vector<int>> nwz;
+    std::map<long long int, int> biterms;
+    double alpha = 50.0 / topics;
+    double beta = 0.01;
+    int iterations = 1000;
+    btm<true>(topics, iterations, alpha, beta, term_cnt, docs, nz, nwz, biterms);
+
+    //
+    cout << "biterm counts: " << biterms.size() << endl;
+
+    // output to a file
+    ofstream terms;
+    terms.open("nwz.csv");
+    for (int i = 0; i != topics; i++) {
+        for (int j = 0; j < term_cnt - 1; j++) {
+            terms << nwz[i][j] << "," ;
+        }
+        terms << nwz[i][term_cnt - 1] << endl;
     }
     terms.close();
-    ofstream doctopic;
-    doctopic.open("docs.csv");
-    for (auto it = nmk.begin(); it != nmk.end(); it++) {
-        doctopic << it->first;
-        for (auto itm = it->second.begin(); itm != it->second.end(); itm++)
-            doctopic << "," << *itm;
-        doctopic << endl;
+    ofstream ofnz;
+    ofnz.open("nz.csv");
+
+    for (auto it = nz.begin(); it != nz.end(); it++) {
+        ofnz << (*it) << ",";
     }
-    doctopic.close();
+    ofnz.close();
+    cout << "dumped into file" << endl;
+        
     system("pause");
 }
