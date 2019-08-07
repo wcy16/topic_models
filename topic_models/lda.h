@@ -8,12 +8,12 @@
 #include <time.h>
 
 /*
-* parameters:
-* nk[topic]  topic word count
-* nkt[topic][word] word's topic count
-* nm[doc]  doc word count
-* nmk[doc][topic]  doc's topic word count
-*/
+ * parameters:
+ * nk[topic]  topic word count
+ * nkt[topic][word] word's topic count
+ * nm[doc]  doc word count
+ * nmk[doc][topic]  doc's topic word count
+ */
 
 template<bool lda_debug = false>
 void lda(int topics, int iterations,
@@ -111,7 +111,7 @@ void lda(int topics, int iterations,
 
         if constexpr(lda_debug) {
             ed = clock();
-            cout << endl << "Time costs: " << (double)(ed - st) / CLOCKS_PER_SEC << "s" << endl;
+            std::cout << std::endl << "Time costs: " << (double)(ed - st) / CLOCKS_PER_SEC << "s" << endl;
         }
     }
 
