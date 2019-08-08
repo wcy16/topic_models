@@ -1,7 +1,7 @@
 /*
- * Biterm Topic Model for short text.
- * The context will be the whole text.
- */
+* Biterm Topic Model for short text.
+* The context will be the whole text.
+*/
 
 #pragma once
 
@@ -18,6 +18,7 @@
  * nz[topic] topic's biterm count
  * nwz[topic][word] word's topic count
  * biterms[] biterms generated from documents
+ * reserve: reserve spaces for biterm counts to prevent extra memory alloc
  */
 template<bool debug = false>
 void btm(int topics, int iterations,
@@ -25,10 +26,14 @@ void btm(int topics, int iterations,
     const std::map<int, std::vector<int>>& docs,
     std::vector<int>& nz,
     std::vector<std::vector<int>>& nwz,
-    std::vector<std::pair<int, int>>& biterms)
+    std::vector<std::pair<int, int>>& biterms,
+    size_t reserve = 0)
 {
     // todo check efficiency for vector/deque
     biterms = std::vector<std::pair<int, int>>();
+    if (reserve != 0) {
+        biterms.reserve(reserve);
+    }
 
     // extract biterms for every document
     for (auto it = docs.begin(); it != docs.end(); it++) {
@@ -43,7 +48,7 @@ void btm(int topics, int iterations,
     }
 
     if constexpr(debug) {
-        cout << "data loaded" << std::endl;
+        std::cout << "data loaded" << std::endl;
     }
 
     // param init
@@ -68,7 +73,7 @@ void btm(int topics, int iterations,
     clock_t st, ed;
     int counter, part;
     if constexpr(debug) {
-        std::cout << "Initialized" << endl;
+        std::cout << "Initialized" << std::endl;
         counter = 0;
         part = biterms.size() / 20;
     }
@@ -77,23 +82,23 @@ void btm(int topics, int iterations,
     auto p = std::vector<double>(topics, 0.0);
     for (int i = 0; i != iterations; i++) {
         if constexpr(debug) {
-            std::cout << i << " iteration(s)" << endl;
+            std::cout << i << " iteration(s)" << std::endl;
             st = clock();
         }
 
         for (int b = 0; b != biterms.size(); b++) {
             if constexpr(debug) {
                 if (counter++ == part) {
-                    cout << " *";
+                    std::cout << " *";
                     counter = 0;
                 }
             }
-            
+
             int k = nbz[b];
 
             int w1 = biterms[b].first;
             int w2 = biterms[b].second;
-            
+
             --nz[k];
             --nwz[k][w1];
             --nwz[k][w2];
@@ -117,12 +122,12 @@ void btm(int topics, int iterations,
 
         if constexpr(debug) {
             ed = clock();
-            std::cout << std::endl << "Time costs: " << (double)(ed - st) / CLOCKS_PER_SEC << "s" << endl;
+            std::cout << std::endl << "Time costs: " << (double)(ed - st) / CLOCKS_PER_SEC << "s" << std::endl;
         }
     }
 
     if constexpr(debug) {
-        std::cout << "Train complete" << endl;
+        std::cout << "Train complete" << std::endl;
     }
 
 }
