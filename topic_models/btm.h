@@ -14,68 +14,75 @@
 #include <array>
 
 /*
+ * template parameters:
+ * initialize: whether to initialize the parameters (nz, nwz, biterms)
+ * debug: whether to output debug information
+ *
  * parameters:
  * nz[topic] topic's biterm count
  * nwz[topic][word] word's topic count
  * biterms[] biterms generated from documents
+ * nbz[biterm] biterm's topic count
  * reserve: reserve spaces for biterm counts to prevent extra memory alloc
  */
-template<bool debug = false>
+template<bool initialize = false, bool debug = false>
 void btm(int topics, int iterations,
     double alpha, double beta, int word_count,
     const std::map<int, std::vector<int>>& docs,
     std::vector<int>& nz,
     std::vector<std::vector<int>>& nwz,
     std::vector<std::pair<int, int>>& biterms,
+    std::vector<int>& nbz,
     size_t reserve = 0)
 {
-    // todo check efficiency for vector/deque
-    biterms = std::vector<std::pair<int, int>>();
-    if (reserve != 0) {
-        biterms.reserve(reserve);
-    }
-
-    // extract biterms for every document
-    for (auto it = docs.begin(); it != docs.end(); it++) {
-        int doc_len = it->second.size();
-        if (doc_len < 2) continue;
-
-        for (auto i = 0; i != doc_len - 1; i++) {
-            for (int j = i + 1; j != doc_len; j++) {
-                biterms.push_back(std::pair<int, int>(it->second.at(i), it->second.at(j)));
-            }
-        }
-    }
-
-    if constexpr(debug) {
-        std::cout << "data loaded" << std::endl;
-    }
-
-    // param init
-    nz = std::vector<int>(topics, 0);
-    nwz = std::vector<std::vector<int>>(topics, std::vector<int>(word_count, 0));
-    auto nbz = std::vector<int>(biterms.size(), 0);
-
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
 
-    // init
-    std::uniform_int_distribution<int> distribution(0, topics - 1);
-    for (int b = 0; b != biterms.size(); b++) {
-        int k = distribution(generator);   // topic k
-        ++nz[k];
-        ++nwz[k][biterms[b].first];
-        ++nwz[k][biterms[b].second];
-        nbz[b] = k;
-    }
+    if constexpr(initialize) {
+        biterms = std::vector<std::pair<int, int>>();
+        if (reserve != 0) {
+            biterms.reserve(reserve);
+        }
 
-    // debug info
-    clock_t st, ed;
-    int counter, part;
-    if constexpr(debug) {
-        std::cout << "Initialized" << std::endl;
-        counter = 0;
-        part = biterms.size() / 20;
+        // extract biterms for every document
+        for (auto it = docs.begin(); it != docs.end(); it++) {
+            int doc_len = it->second.size();
+            if (doc_len < 2) continue;
+
+            for (auto i = 0; i != doc_len - 1; i++) {
+                for (int j = i + 1; j != doc_len; j++) {
+                    biterms.push_back(std::pair<int, int>(it->second.at(i), it->second.at(j)));
+                }
+            }
+        }
+
+        if constexpr(debug) {
+            std::cout << "data loaded" << std::endl;
+        }
+
+        // param init
+        nz = std::vector<int>(topics, 0);
+        nwz = std::vector<std::vector<int>>(topics, std::vector<int>(word_count, 0));
+        nbz = std::vector<int>(biterms.size(), 0);
+
+        // init
+        std::uniform_int_distribution<int> distribution(0, topics - 1);
+        for (int b = 0; b != biterms.size(); b++) {
+            int k = distribution(generator);   // topic k
+            ++nz[k];
+            ++nwz[k][biterms[b].first];
+            ++nwz[k][biterms[b].second];
+            nbz[b] = k;
+        }
+
+        // debug info
+        clock_t st, ed;
+        int counter, part;
+        if constexpr(debug) {
+            std::cout << "Initialized" << std::endl;
+            counter = 0;
+            part = biterms.size() / 20;
+        }
     }
 
     // iterate
@@ -89,7 +96,7 @@ void btm(int topics, int iterations,
         for (int b = 0; b != biterms.size(); b++) {
             if constexpr(debug) {
                 if (counter++ == part) {
-                    std::cout << " *";
+                    std::cout << " *" << std::flush;
                     counter = 0;
                 }
             }
